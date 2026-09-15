@@ -114,8 +114,6 @@ than that:
 - The reward and punishment signals are engineered current injections into identified dopamine
   cells. They are not pain, pleasure or anything the fly experiences.
 
-The UI text is in Hebrew. The chart, buttons and neuron names on the 3D screen are in English.
-
 ## Credits
 
 All the science, the connectome import, the neural kernel and the trading loop are

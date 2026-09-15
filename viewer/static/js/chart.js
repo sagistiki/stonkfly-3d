@@ -132,7 +132,7 @@ export class ChartScreen {
       this.points = null;
       this.trend = 0;
       ctx.fillStyle = COLORS.muted;
-      ctx.font = '500 48px Rubik, sans-serif';
+      ctx.font = '500 48px Inter, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('Waiting for market data…', CANVAS_W / 2, 420);
     }
@@ -170,7 +170,7 @@ export class ChartScreen {
     ctx.font = '700 58px "JetBrains Mono", monospace';
     ctx.fillText(this.product, AREA.x0, 105);
     ctx.fillStyle = COLORS.muted;
-    ctx.font = '500 30px Rubik, sans-serif';
+    ctx.font = '500 30px Inter, sans-serif';
     ctx.fillText(`last ${v.length} observations · mid price`, AREA.x0, 150);
 
     ctx.textAlign = 'right';

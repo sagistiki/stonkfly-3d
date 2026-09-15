@@ -2,12 +2,12 @@
 const $ = (id) => document.getElementById(id);
 
 const STATUS_TEXT = {
-  running: 'הזבוב רץ',
-  idle: 'לא פעיל (אין טיקים חדשים)',
-  stopped: 'נעצר — קובץ STOP',
-  halted: 'הופסק',
-  waiting: 'ממתין לזבוב',
-  disconnected: 'אין חיבור לשרת',
+  running: 'fly running',
+  idle: 'idle (no new ticks)',
+  stopped: 'stopped — STOP file',
+  halted: 'halted',
+  waiting: 'waiting for the fly',
+  disconnected: 'disconnected',
 };
 
 // Rows come from local files, but older rows can miss fields: never print NaN.
@@ -18,7 +18,6 @@ const int = (v) => (Number.isFinite(num(v)) ? Math.round(num(v)).toLocaleString(
 const hz = (v) => (Number.isFinite(num(v)) ? String(Math.round(num(v) * 100) / 100) : '—');
 const signed = (v, text) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${text}`;
 // Left-to-right isolate, so formulas and numbers keep their order inside Hebrew text.
-const ltr = (s) => `\u2066${s}\u2069`;
 
 export function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -58,8 +57,8 @@ export function renderStatus(state, connected) {
   const overlay = $('overlay');
   overlay.hidden = connected && key !== 'waiting';
   $('overlay-text').textContent = connected
-    ? `ממתין לזבוב… הרץ את העובד כדי להתחיל (${state?.run_dir || ''})`
-    : 'אין חיבור לשרת הצפייה — מנסה שוב…';
+    ? `Waiting for the fly… start the worker to begin (${state?.run_dir || ''})`
+    : 'No connection to the viewer server — retrying…';
 }
 
 export function renderCountdown(lastEventTime, status) {
@@ -67,8 +66,8 @@ export function renderCountdown(lastEventTime, status) {
   if (!lastEventTime || status !== 'running') { el.textContent = ''; return; }
   const remaining = Math.round(lastEventTime + 60 - Date.now() / 1000);
   el.innerHTML = remaining > 0
-    ? `החלטה הבאה בעוד <b class="num">~${Math.min(remaining, 60)}s</b>`
-    : '<b>המוח מעבד תצפית…</b>';
+    ? `next decision in <b class="num">~${Math.min(remaining, 60)}s</b>`
+    : '<b>the brain is integrating…</b>';
 }
 
 export function renderTick(tick) {
@@ -163,7 +162,7 @@ export function renderBrain(ev, events, threshold = 2, { thinking = false } = {}
   if (thinking) {
     chip.textContent = '…';
     chip.className = 'chip';
-    $('why').textContent = 'מאחד את הפעילות העצבית של התצפית…';
+    $('why').textContent = 'integrating this observation…';
     return;
   }
   const side = ['BUY', 'SELL', 'HOLD'].includes(n.side) ? n.side : '';
@@ -178,12 +177,12 @@ export function renderBrain(ev, events, threshold = 2, { thinking = false } = {}
   const known = Number.isFinite(diff) && Number.isFinite(gate);
   const diffText = Number.isFinite(diff) ? `${diff > 0 ? '+' : ''}${hz(diff)}` : '—';
   $('why').textContent = !known
-    ? (side ? `החלטה: ${side}` : '—')
+    ? (side ? `decision: ${side}` : '—')
     : !gate
-      ? `השער לא נורה ← ${side}`
+      ? `the gate did not fire → ${side}`
       : Math.abs(diff) < threshold
-        ? `${ltr(`|R−L| = ${hz(Math.abs(diff))} Hz < ${threshold}`)} ← ${side}`
-        : `${ltr(`R−L = ${diffText} Hz`)} והשער נורה ← ${side}`;
+        ? `|R−L| = ${hz(Math.abs(diff))} Hz < ${threshold} → ${side}`
+        : `R−L = ${diffText} Hz and the gate fired → ${side}`;
 
   // Tug-of-war bar: ±20 Hz full scale, band shows the HOLD threshold.
   const scale = 20;
@@ -205,7 +204,7 @@ export function renderBrain(ev, events, threshold = 2, { thinking = false } = {}
   const g = Number.isFinite(gate) ? Math.max(0, gate) : 0;
   const dots = Math.min(g, 12);
   setHtml($('gate-dots'), Array.from({ length: Math.max(dots, 3) }, (_, i) => `<i class="${i < dots ? '' : 'off'}"></i>`).join(''));
-  $('gate-text').textContent = !Number.isFinite(gate) ? '—' : gate ? `${int(gate)} קוצים · פתוח` : 'סגור';
+  $('gate-text').textContent = !Number.isFinite(gate) ? '—' : gate ? `${int(gate)} spikes · open` : 'closed';
 
   sparkline($('diff-spark'), events.map((e) => {
     const m = e.neural || {};
@@ -227,18 +226,18 @@ export function renderBrain(ev, events, threshold = 2, { thinking = false } = {}
 function renderStimulus(ev) {
   const n = ev.neural || {};
   const kind = ['reward', 'aversive'].includes(n.stimulus) ? n.stimulus : 'none';
-  const ms = Number.isFinite(num(n.stimulus_ms)) && num(n.stimulus_ms) > 0 ? ` ${ltr(`${Math.round(num(n.stimulus_ms))}\u00a0ms`)}` : '';
+  const ms = Number.isFinite(num(n.stimulus_ms)) && num(n.stimulus_ms) > 0 ? ` ${Math.round(num(n.stimulus_ms))}\u00a0ms` : '';
   const delta = num(ev.pnl_delta_usdc);
-  const change = Number.isFinite(delta) ? ` ${ltr(`(Δ\u00a0${signed(delta, usd(Math.abs(delta), 4))})`)}` : '';
+  const change = Number.isFinite(delta) ? ` (Δ\u00a0${signed(delta, usd(Math.abs(delta), 4))})` : '';
   const stim = $('stimulus');
   stim.className = `stimulus ${kind}`;
   stim.textContent = kind === 'reward'
-    ? `אות תגמול מהונדס: פולס${ms} ל-15 תאי הדופמין PAM11 — ההון עלה מאז התצפית הקודמת${change}`
+    ? `Engineered reward signal: a${ms} pulse into the 15 PAM11 dopamine cells — equity rose since the previous observation${change}`
     : kind === 'aversive'
-      ? `אות אברסיבי מהונדס (לא כאב): פולס${ms} ל-2 תאי הדופמין PPL101 — ההון ירד מאז התצפית הקודמת${change}`
+      ? `Engineered aversive signal (not pain): a${ms} pulse into the 2 PPL101 dopamine cells — equity fell since the previous observation${change}`
       : n.stimulus === undefined
-        ? 'אין נתוני גירוי בשורה הזו'
-        : `ללא פולס דופמין — שינוי ההון קטן מסף הגירוי${change}`;
+        ? 'no stimulus data in this row'
+        : `No dopamine pulse — the equity change stayed inside the deadband${change}`;
 }
 
 export function renderVision(version) {
