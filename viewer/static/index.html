@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stonkfly 3D</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪰</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap">
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="stage"></canvas>
+
+  <header class="topbar">
+    <div class="brand">🪰 <b>STONKFLY</b> <span class="muted">3D</span></div>
+    <span id="status" class="pill">מתחבר…</span>
+    <span id="mode" class="pill mode">PAPER</span>
+    <span class="topstat">טיק <b id="tick" class="num">—</b></span>
+    <span class="topstat" id="countdown">—</span>
+    <button id="replay" type="button" title="הצג שוב את ההחלטה האחרונה">↻ החלטה אחרונה</button>
+  </header>
+
+  <div class="column left">
+  <aside class="panel left" id="portfolio">
+    <h2>תיק והון</h2>
+    <div class="equity">
+      <div class="big num" id="equity">—</div>
+      <div id="pnl" class="num">—</div>
+    </div>
+    <svg id="equity-spark" class="spark" viewBox="0 0 300 60" preserveAspectRatio="none"></svg>
+    <dl class="grid2">
+      <dt>מזומן</dt><dd class="num" id="cash">—</dd>
+      <dt>BTC מוחזק</dt><dd class="num" id="btc">—</dd>
+      <dt>שווי BTC</dt><dd class="num" id="btc-value">—</dd>
+      <dt>התחלה</dt><dd class="num" id="initial">—</dd>
+    </dl>
+    <h3>החלטות אחרונות</h3>
+    <ol id="trades" class="trades"></ol>
+  </aside>
+  <aside class="panel vision" id="vision">
+    <h2>מה הזבוב רואה</h2>
+    <img id="input" alt="תמונת הקלט של הזבוב" width="320" height="180">
+    <p class="muted small">320×180 פיקסלים → 3,335 קלטי בהירות + 811 קלטי צבע R8 ברשתית</p>
+  </aside>
+  </div>
+
+  <aside class="panel right" id="brain">
+    <h2>המוח של הזבוב</h2>
+    <div class="decision">
+      <span id="side" class="chip">—</span>
+      <span id="why" class="why">—</span>
+    </div>
+    <div class="tug" dir="ltr">
+      <div class="tug-labels"><span>◀ SELL</span><span>BUY ▶</span></div>
+      <div class="tug-bar">
+        <div class="tug-band" id="band"></div>
+        <div class="tug-fill" id="tug-fill"></div>
+        <div class="tug-center"></div>
+      </div>
+      <div class="tug-rates">
+        <span>DNp20 L <b class="num" id="left-hz">—</b> Hz</span>
+        <span>Δ <b class="num" id="diff-hz">—</b></span>
+        <span>R <b class="num" id="right-hz">—</b> Hz DNp20</span>
+      </div>
+    </div>
+    <div class="gate">
+      <span>שער DNpe017</span>
+      <span id="gate-dots" class="dots" dir="ltr"></span>
+      <b id="gate-text">—</b>
+    </div>
+    <svg id="diff-spark" class="spark" viewBox="0 0 300 60" preserveAspectRatio="none"></svg>
+    <div id="stimulus" class="stimulus">—</div>
+    <dl class="grid2">
+      <dt>קוצים (כל המוח)</dt><dd class="num" id="spikes">—</dd>
+      <dt>קוצי תאי קניון (KC)</dt><dd class="num" id="kc">—</dd>
+      <dt>סינפסות שהשתנו</dt><dd class="num" id="plastic">—</dd>
+      <dt>יעילות ממוצעת</dt><dd class="num" id="efficacy">—</dd>
+      <dt>זמן מוח מדומה</dt><dd class="num" id="brain-ms">—</dd>
+      <dt>זמן חישוב</dt><dd class="num" id="compute">—</dd>
+    </dl>
+  </aside>
+
+  <footer class="caption">
+    הדמיה של פלט עצבי אמיתי (DNp20 ימין−שמאל + שער DNpe017) — הזבוב לא לוחץ פיזית על כלום.
+    מסחר נייר בכסף מדומה; לא הוכחה למידה רווחית.
+  </footer>
+
+  <div id="overlay" class="overlay" hidden>
+    <div class="overlay-card">
+      <div class="big">🪰</div>
+      <div id="overlay-text">ממתין לזבוב…</div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

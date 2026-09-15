@@ -21,3 +21,6 @@ build/
 coinbase-key.json
 cdp_api_key.json
 *.partial
+
+# local machine setup script, not part of the project
+setup-stonkfly.sh

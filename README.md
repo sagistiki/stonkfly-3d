@@ -1,39 +1,127 @@
-![Stonkfly: a pixel fly beside a candlestick chart](assets/stonkfly.png)
+![Stonkfly 3D: a fly presses a glowing BUY button in front of a candlestick chart](assets/viewer/cover.png)
 
-# Stonkfly
+# Stonkfly 3D
 
-A fly-connectome simulation that can operate a crypto trading account. Actual neural output, actual Coinbase integration. Profitable learning has not been demonstrated.
+A live 3D viewer for [Stonkfly](https://github.com/nftechie/stonkfly) — the experiment where a
+simulated fruit-fly connectome (166,700 neurons, 25.6M connections) proposes crypto trades.
 
-**How it works:** Public Coinbase prices become an RGB chart. It stimulates 3,335 brightness inputs and 811 R8 color inputs in the retained **MaleCNS v1.0 graph: 166,700 neurons, 25.6 million connections**. A fixed neural readout proposes buy, sell or hold. A custom **Coinbase AgentKit ActionProvider** checks limits and places spot orders through Coinbase Advanced.
+Stonkfly is headless: it writes JSON lines to a run directory. This fork adds `viewer/`, a
+read-only window into that directory, so you can **watch** the fly decide instead of reading its
+log. Every tick, the fly flies to the button its own neurons chose and presses it.
 
-Positive portfolio P&L stimulates 15 identified PAM11 dopamine cells; negative P&L stimulates two PPL101 aversive dopamine cells. A candidate memory rule changes existing KC-to-MBON connections. These are engineered reinforcement signals, **not modeled pain receptors**. Synaptic changes do not establish that it learns to trade profitably. [Model and evidence](docs/model.md).
+![The fly flies to the BUY button and presses it](assets/viewer/press.gif)
 
-## Run it
+Nothing here changes how the fly trades. The viewer only reads.
 
-Python 3.11, a C++17 compiler, macOS/Linux. Allow several GB for the dataset and dependencies; 16 GB RAM recommended.
+## Quick start
 
 ```sh
 python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -e '.[test]'
-python -m stonkfly prepare
-python -m stonkfly run
+python -m stonkfly prepare      # ~1.1 GB download, builds the graph
+python -m viewer                # starts the fly + viewer, opens the browser
 ```
 
-Default: **paper trades, real public BTC-USDC data, $100 simulated balance**. No key needed. Local logs, sensory images and resumable brain state go in `runs/paper/`. Ctrl-C stops it; the same command resumes.
+That is the whole thing: `python -m viewer` starts a **paper** worker (simulated $100, real public
+BTC-USDC prices), serves the viewer on `http://127.0.0.1:8765` and opens it. Ctrl-C stops both and
+preserves the fly's brain state; the same command resumes.
 
-For real orders, first create a dedicated Coinbase Advanced portfolio with **at most 100 USDC** and a portfolio-scoped **ECDSA API key with View + Trade, no Transfer**. Copy `.env.example` to `.env`, fill it in locally, then run these commands yourself:
+| Flag | Effect |
+| --- | --- |
+| `--out runs/paper` | which run directory to watch |
+| `--port 8765` | first port to try |
+| `--no-worker` | attach to a fly that is already running, or inspect a finished run |
+| `--no-browser` | don't open a browser |
 
-```sh
-python -m stonkfly run --live --preflight-only
-python -m stonkfly run --live
+The viewer never starts live trading. A run directory whose ledger says `live`, a `STOP` file or a
+halted run gets the viewer only, and the worker is left alone.
+
+## What you are looking at
+
+![The viewer: 3D fly, trading screen, portfolio and brain panels](assets/viewer/hero.png)
+
+**The screen** shows what the fly actually sees — the same price chart that is rendered into its
+retina — plus the trades it has made. Green triangles are filled buys, red are sells, hollow orange
+are vetoed attempts.
+
+**The fly** acts out the decoded neural decision:
+
+- **BUY / SELL** — it flies to that button, reaches out its front legs and presses. The cap sinks in
+  and glows.
+- **FILLED** — the button flares and the fill appears on the screen.
+- **VETO** — the button blinks orange, the reason appears, and the fly shakes its head and backs off.
+- **HOLD** — it stays at its perch and grooms its front legs while the HOLD button hums.
+
+![A vetoed sell](assets/viewer/veto.png)
+
+**The brain panel** explains *why*. The decision is a tug-of-war between the left and right DNp20
+descending neurons, gated by DNpe017:
+
+| Neural measurement | Proposal |
+| --- | --- |
+| right − left ≥ 2 Hz, with at least one DNpe017 spike | BUY |
+| right − left ≤ −2 Hz, with at least one DNpe017 spike | SELL |
+| otherwise | HOLD |
+
+The panel also shows the dopamine stimulus for that tick (15 PAM11 cells for positive P&L, 2 PPL101
+cells for negative), total and Kenyon-cell spikes, and how many of the 7,835 plastic KC→MBON
+synapses changed.
+
+**The portfolio panel** tracks equity against the starting $100, cash, holdings and the last eight
+decisions.
+
+## How it fits together
+
+```
+stonkfly run ──writes──▶ runs/paper/{events.jsonl, latest.json, latest-input.png, ledger.sqlite}
+                                   │  read-only
+viewer/server.py ──────────────────┘
+   GET /api/state?since=N   new ticks, portfolio, price history, status
+   GET /api/input.png       the frame the fly last saw
+                                   │  polled every 2 s
+viewer/static/js/*.js ◀────────────┘   Three.js scene, fly rig, chart texture, panels
 ```
 
-Defaults: $10 maximum order including reserved fees, 24 attempts/day, no shorts or leverage. A $20 drawdown stops new orders; **it does not liquidate holdings or cap further losses**. [Operation and recovery](docs/operations.md).
+Design constraints worth knowing if you hack on it:
 
-```sh
-python -m stonkfly status
-python -m pytest -q
-```
+- **The viewer lives outside the `stonkfly/` package on purpose.** The worker hashes every `.py` and
+  `.cpp` file in that package into its run provenance and refuses to resume a run if anything
+  changed. Viewer code must never invalidate a run.
+- **It is strictly read-only.** It never writes to the run directory and never takes the worker's
+  lock. The ledger is opened with `mode=ro` (and `immutable=1` when no WAL file is present, so a
+  read cannot even create one), and `events.jsonl` is tailed incrementally — a 20k-line file costs
+  about 0.3 ms per poll instead of re-parsing 24 MB.
+- **No build step, no npm.** Plain ES modules; Three.js loads from a CDN via an import map.
+- **The fly is procedural.** Body, wings, eyes and the six three-jointed legs are built in code
+  ([`viewer/static/js/fly.js`](viewer/static/js/fly.js)) — no model files, no textures to ship.
 
-The repo does not come funded or connected to anyone’s account. Live execution needs your local credentials and explicit opt-in.
+Tests: `python -m pytest -q` (the viewer's own are in `tests/test_viewer.py`).
+
+## Honesty
+
+This is a visualization, and the things it visualizes are real neural output — but nothing more
+than that:
+
+- **The fly does not press anything.** The press is how the viewer draws a decoded spike-rate
+  difference. There is no body, no muscles and no motor control in the model.
+- **Paper trading is the default.** Simulated money, real public prices. Live trading needs your own
+  credentials, an explicit opt-in and the upstream instructions in
+  [docs/operations.md](docs/operations.md).
+- **No profitable learning has been demonstrated**, by upstream or here. See
+  [docs/model.md](docs/model.md) and [docs/validation.md](docs/validation.md) for what is and is not
+  established, including what it would take to claim otherwise.
+- The reward and punishment signals are engineered current injections into identified dopamine
+  cells. They are not pain, pleasure or anything the fly experiences.
+
+The UI text is in Hebrew. The chart, buttons and neuron names on the 3D screen are in English.
+
+## Credits
+
+All the science, the connectome import, the neural kernel and the trading loop are
+[nftechie/stonkfly](https://github.com/nftechie/stonkfly). This fork adds the viewer.
+
+The connectome is the [MaleCNS v1.0 release](https://male-cns.janelia.org/download/); see
+[THIRD_PARTY.md](THIRD_PARTY.md) for upstream data licensing. MIT licensed, as upstream.
+
+> The original project README is kept at [docs/upstream-readme.md](docs/upstream-readme.md).
